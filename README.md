@@ -16,19 +16,27 @@ Firmware for the LILYGO T-Deck Keyboard running on an ESP32-C3.
 
 ## Flashing
 
-Flashing requires a **USB-to-TTL adapter** or a **Raspberry Pi Pico** with [Pico UART Bridge](https://github.com/Noltari/pico-uart-bridge) software installed.
+Flashing requires a **USB-to-TTL adapter**.
 
 The pins being connected to are slightly undersized from a standard debug header. The preferred method of connecting is using probes/test clips. However, male headers removed from the housing will work too, just ensure they don't touch each other. The LILYGO T-Deck includes a 6-pin header that can be soldered to the board, but that may be unnecessarily risky.
 
-It is also necessary to short the boot and reset pins to ground in order to get the keyboard ready for flashing. Build a breadboard like so, taking care for the way the buttons are oriented.
+It is also necessary to short the boot and reset pins to ground in order to get the keyboard ready for flashing.
 
-![](docs/img/diagram.png)
+### PlatformIO
+This project utilizes PlatformIO for its ease-of-use. Building via `CMake` will be added at a later date.
 
-### Troubleshooting
-
-Pico UART users may have to lower the baudrate to `76800` to get a successful flash. Set the following option in the `platformio.ini` file.
+Place the keyboard into Download Mode by pressing both the BOOT and RESET buttons, then while still holding BOOT, releasing RESET. Then releasing BOOT. If successful, the keyboard backlight should turn on and stay on. Alternatively, you can connect to the UART interface and verify the output. **Remember to disconnect any terminals from the UART before flashing.**
 
 ```
-[env:t-deck-keyboard]
-upload_speed = 76800
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x1 (POWERON),boot:0x5 (DOWNLOAD(USB/UART0/1))
+waiting for download
 ```
+
+Flash the board. If you have PlatformIO Core (CLI) installed, you can run the following:
+
+```shell
+pio run -t upload
+```
+
