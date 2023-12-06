@@ -1,6 +1,6 @@
 name: PlatformIO CI
 
-on: [push, workflow_call]
+on: [pull_request]
 
 jobs:
   build:
