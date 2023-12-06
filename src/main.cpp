@@ -36,7 +36,6 @@ char keyboardSymbol[colCount][rowCount];
 
 bool backlightState = false;
 queue<char> eventBuffer;
-uint8_t eventsRequested = 1;
 
 void setup() {
   keyboard[0][0] = 'q';
@@ -135,8 +134,7 @@ void setup() {
   Wire.onReceive(i2cReceive);
   Wire.onRequest(i2cTransmit);
   Wire.begin((uint8_t)I2C_ADDR, SDA_PIN, SCL_PIN, 0);
-  Serial.print("Started I2C interface on address: ");
-  Serial.println(I2C_ADDR);
+  Serial.printf("INFO: I2C Address: 0x%x\n", I2C_ADDR);
 }
 
 void loop() {
@@ -150,59 +148,44 @@ void loop() {
 void i2cReceive(int bytesRead) {
   if (0 < bytesRead) {
     byte address = Wire.read();
-    Serial.printf("REC[%x]: %x -> ", bytesRead, address);
-
-    byte data[bytesRead - 1];
-    for (byte i = 0; i < (bytesRead - 1); i++) {
+    int dataSize = (bytesRead - 1);
+    Serial.printf("INFO: I2C Receive: addr=%x data[%d]=", address, dataSize);
+    byte data[dataSize];
+    for (byte i = 0; i < (dataSize); i++) {
       byte x = Wire.read();
       Serial.print(x);
       data[i] = x;
     }
     Serial.println();
 
-    // switch (address) {
-    //   case 0x0:
-    //     if (0 < sizeof(data)) {
-    //       eventsRequested = (uint8_t)data[0];
-    //     } else {
-    //       eventsRequested = 1;
-    //     }
-    //     break;
-    //   case 0x1:
-    //     key = eventBuffer.size();
-    //     break;
-    //   case 0x10:
-    //     setBacklight(!backlightState);
-    //     break;
-    //   case 0x11:
-    //     setBacklight(true);
-    //     break;
-    //   case 0x12:
-    //     setBacklight(false);
-    //     break;
-    //   default:
-    //     Serial.print("UNKNOWN: ");
-    //     Serial.println(address);
-    // }
+    switch ((int)address) {
+      case 0x1:  // Backlight On/Off
+        if (1 < bytesRead) {
+          setBacklight((bool)data[0]);
+        } else {
+          setBacklight(!backlightState);
+        }
+        break;
+      default:
+        Serial.printf("ERROR: Unknown address %x\n", address);
+        break;
+    }
   }
 }
 
 /**
- * Builds and transmits a response to the host device.
+ * Transmits a response to the host device.
  */
 void i2cTransmit() {
-  // TODO: Request multiple keypresses at one time.
-  byte response[eventsRequested];
-  for (byte i = 0; i < eventsRequested; i++) {
-    if (0 < eventBuffer.size()) {
-      response[i] = (byte)eventBuffer.front();
-      eventBuffer.pop();
-    } else {
-      response[i] = '\0';
-    }
+  char data;
+  if (0 < eventBuffer.size()) {
+    data = eventBuffer.front();
+    eventBuffer.pop();
+  } else {
+    data = '\0';
   }
-  Wire.write(response, sizeof(response));
-  eventsRequested = 1;  // Reset
+  Wire.print(data);
+  Serial.printf("INFO: I2C Transmit: data[%d]=%c\n", sizeof(data), data);
 }
 
 /**
@@ -257,8 +240,8 @@ void processKeyStates() {
             addKeyEvent(keyboardSymbol[colIndex][rowIndex]);
             // Shift Modifier
           } else if ((keyPressed(1, 6) || keyPressed(2, 3)) &&
-                     isLowerCase((uint8_t)keyboard[colIndex][rowIndex])) {
-            addKeyEvent((char)((uint8_t)keyboard[colIndex][rowIndex] - 32));
+                     isLowerCase((int)keyboard[colIndex][rowIndex])) {
+            addKeyEvent((char)((int)keyboard[colIndex][rowIndex] - 32));
           } else {
             addKeyEvent(keyboard[colIndex][rowIndex]);
           }
